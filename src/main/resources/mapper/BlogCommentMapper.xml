@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.cqcskj.blog.mapper.BlogCommentMapper">
+
+    <!-- 定义结果映射（保持不变） -->
+    <resultMap id="BlogCommentResultMap" type="java.util.Map">
+        <id property="commentId" column="comment_id"/>
+        <result property="mail" column="comment_mail"/>
+        <result property="nickname" column="user_nickname"/>
+        <result property="blogId" column="blog_id"/>
+        <result property="blogTitle" column="blog_title"/>
+        <result property="parentCommentId" column="parent_comment_id"/>
+        <result property="content" column="content"/>
+        <result property="commentTime" column="comment_time"/>
+        <result property="parentNickname" column="parent_nickname"/>
+        <result property="photo" column="user_photo"/>
+        <result property="userId" column="user_id"/>
+    </resultMap>
+
+    <select id="selectCommentsByBlogIdMapper" resultMap="BlogCommentResultMap">
+        SELECT
+        c.comment_id,
+        c.mail AS comment_mail,
+        u.nickname AS user_nickname,
+        u.user_id,
+        u.photo AS user_photo,
+        c.blog_id,
+        b.title AS blog_title,
+        c.parent_comment_id,
+        c.content,
+        c.comment_time,
+        parent.nickname AS parent_nickname
+        FROM
+        blog_comment c
+        JOIN user u ON c.mail = u.mail
+        LEFT JOIN blog b ON c.blog_id = b.blog_id
+        LEFT JOIN (
+        SELECT
+        bc.comment_id AS parent_id,
+        u.nickname AS nickname
+        FROM
+        blog_comment bc
+        JOIN user u ON bc.mail = u.mail
+        ) AS parent ON c.parent_comment_id = parent.parent_id
+        <where>
+            <!-- 按博客ID查询（可选） -->
+            <if test="blogId != null and blogId != ''">
+                c.blog_id = #{blogId}
+            </if>
+
+            <!-- 按邮箱模糊查询（可选，邮箱可为空） -->
+            <if test="mail != null and mail != ''">
+                <!-- 拼接 AND 条件（MyBatis <where> 会自动处理首个 AND） -->
+                AND u.mail LIKE CONCAT('%', #{mail}, '%')
+            </if>
+        </where>
+        ORDER BY
+        c.comment_time ASC;
+    </select>
+</mapper>

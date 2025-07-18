@@ -1,0 +1,159 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.cqcskj.blog.mapper.BlogMapper">
+    <resultMap id="BlogResultMap" type="java.util.Map">
+        <id property="blogId" column="blog_id"/>
+        <result property="mail" column="mail"/>
+        <result property="title" column="title"/>
+        <result property="content" column="content"/>
+        <result property="summary" column="summary"/>
+        <result property="categoryId" column="category_id"/>
+        <result property="status" column="status"/>
+        <result property="views" column="views"/>
+        <result property="likes" column="likes"/>
+        <result property="comments" column="comments"/>
+        <result property="createdAt" column="created_at"/>
+        <result property="publishedAt" column="published_at"/>
+        <result property="customTags" column="custom_tags"/>
+        <result property="images" column="images"/>
+        <result property="name" column="category_name"/>
+        <result property="nickname" column="user_nickname"/>
+        <result property="rejectReason" column="reject_reason"/>
+        <result property="photo" column="photo"/>
+        <result property="userId" column="user_id"/>
+        <!-- 标签集合映射 -->
+        <collection
+                property="tags"
+                ofType="com.cqcskj.blog.entity.Tag"
+                javaType="java.util.List">
+            <id property="tagId" column="tag_id"/>
+            <result property="name" column="tag_name"/>
+            <result property="color" column="tag_color"/>
+        </collection>
+    </resultMap>
+
+    <select id="getBlogMapper" resultMap="BlogResultMap">
+        SELECT
+        b.blog_id,
+        b.mail,
+        u.nickname AS user_nickname,
+        u.photo,
+        u.user_id,
+        b.title,
+        b.content,
+        b.reject_reason,
+        b.category_id,
+        c.name AS category_name,
+        b.summary,
+        b.status,
+        b.views,
+        b.likes,
+        b.comments,
+        b.created_at,
+        b.published_at,
+        b.custom_tags,
+        b.images,
+        t.tag_id,
+        t.name AS tag_name,
+        t.color AS tag_color
+        FROM
+        blog b
+        LEFT JOIN user u ON b.mail = u.mail
+        LEFT JOIN category c ON b.category_id = c.category_id
+        LEFT JOIN blog_tag bt ON b.blog_id = bt.blog_id
+        LEFT JOIN tag t ON bt.tag_id = t.tag_id
+        <where>
+            <!-- 搜索条件 -->
+            <if test="searchKey != null and searchKey != ''">
+                (u.nickname LIKE CONCAT('%', #{searchKey}, '%')
+                OR b.title LIKE CONCAT('%', #{searchKey}, '%')
+                OR b.content LIKE CONCAT('%', #{searchKey}, '%')
+                OR c.name LIKE CONCAT('%', #{searchKey}, '%')
+                OR t.name LIKE CONCAT('%', #{searchKey}, '%'))
+            </if>
+
+            <!-- 状态条件：调整顺序，避免逻辑冲突 -->
+            <if test="outStatus != null and outStatus != ''">
+                AND b.status IN (0, 1, 2) <!-- 当outStatus存在时，强制查询0/1/2（排除3） -->
+            </if>
+            <if test="status != null and status != ''">
+                AND b.status = #{status} <!-- 当status存在时，精确匹配（包括3） -->
+            </if>
+
+            <if test="mail != null and mail != ''">
+                AND b.mail=#{mail}
+            </if>
+        <if test="blogId!='' and blogId!=null">
+            AND b.blog_id=#{blogId}
+        </if>
+            <!-- 移除硬编码的b.status!=3，改为由outStatus控制 -->
+            <!-- 原问题出在这里：硬编码导致所有情况都排除3，包括status=3的查询 -->
+        </where>
+        ORDER BY b.created_at DESC
+    </select>
+    <select id="recommendBlogMapper" resultMap="BlogResultMap">
+        SELECT
+        b.blog_id,
+        b.mail,
+        u.nickname AS user_nickname,
+        u.photo,
+        u.user_id,
+        b.title,
+        b.content,
+        b.reject_reason,
+        b.category_id,
+        c.name AS category_name,
+        b.summary,
+        b.status,
+        b.views,
+        b.likes,
+        b.comments,
+        b.created_at,
+        b.published_at,
+        b.custom_tags,
+        b.images,
+        t.tag_id,
+        t.name AS tag_name,
+        t.color AS tag_color
+        FROM
+        blog b
+        LEFT JOIN user u ON b.mail = u.mail
+        LEFT JOIN category c ON b.category_id = c.category_id
+        LEFT JOIN blog_tag bt ON b.blog_id = bt.blog_id
+        LEFT JOIN tag t ON bt.tag_id = t.tag_id
+        <where>
+            <!-- 搜索条件 -->
+            <if test="searchKey != null and searchKey != ''">
+                (u.nickname REGEXP #{searchKey}
+                OR b.title REGEXP #{searchKey}
+                OR b.content REGEXP #{searchKey}
+                OR c.name REGEXP #{searchKey}
+                OR t.name REGEXP #{searchKey})
+            </if>
+
+            <!-- 排除已点赞的博客 -->
+            <if test="excludeBlogIds != null and excludeBlogIds.size() > 0">
+                AND b.blog_id NOT IN
+                <foreach collection="excludeBlogIds" item="blogId" open="(" separator="," close=")">
+                    #{blogId}
+                </foreach>
+            </if>
+
+            <!-- 状态条件：调整顺序，避免逻辑冲突 -->
+            AND b.status = 1
+
+            <!-- 可以添加更多调试信息 -->
+            <if test="mail != null and mail != ''">
+                AND b.mail = #{mail}
+            </if>
+            <if test="blogId != '' and blogId != null">
+                AND b.blog_id = #{blogId}
+            </if>
+        </where>
+        <if test="orderBy != null and orderBy != ''">
+            ORDER BY ${orderBy}
+        </if>
+    </select>
+</mapper>

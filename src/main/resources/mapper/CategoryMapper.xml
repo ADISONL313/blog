@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.cqcskj.blog.mapper.CategoryMapper">
+    <!-- 修复resultMap的type与resultType不一致问题 -->
+    <resultMap id="CategoryResultMap" type="java.util.Map">
+        <id property="categoryId" column="category_id" />
+        <result property="name" column="category_name" />
+        <result property="description" column="category_description" />
+        <!-- 修复属性名不一致问题 -->
+        <result property="blogCount" column="blog_count" />
+    </resultMap>
+
+    <!-- 统一使用resultMap -->
+    <select id="selectCategoriesWithBlogCountMapper" resultMap="CategoryResultMap">
+        SELECT
+        c.category_id AS category_id,
+        c.name AS category_name,
+        c.description AS category_description,
+        COUNT(b.blog_id) AS blog_count
+        FROM
+        category c
+        LEFT JOIN
+        blog b ON c.category_id = b.category_id
+        <where>
+            <if test="name != null and name != ''">
+                c.name LIKE CONCAT('%', #{name}, '%')
+            </if>
+        </where>
+        GROUP BY
+        c.category_id, c.name, c.description
+        <!-- 移除不存在的排序字段 -->
+    </select>
+</mapper>

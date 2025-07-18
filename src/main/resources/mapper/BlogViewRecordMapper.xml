@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.cqcskj.blog.mapper.BlogViewRecordMapper">
+    <resultMap id="BlogViewRecordResultMap" type="java.util.Map">
+        <id property="viewRecordId" column="view_record_id"/>
+        <result property="mail" column="mail"/>
+        <result property="blogId" column="blog_id"/>
+        <result property="viewTime" column="view_time"/>
+        <result property="blogTitle" column="blog_title"/>
+    </resultMap>
+
+    <select id="selectAllViewRecordsMapper" resultMap="BlogViewRecordResultMap">
+        SELECT
+        bvr.view_record_id,
+        bvr.mail,
+        bvr.blog_id,
+        bvr.view_time,
+        b.title AS blog_title
+        FROM
+        blog_view_record bvr
+        INNER JOIN blog b ON bvr.blog_id = b.blog_id
+        <where>
+            <if test="mail != null and mail != ''">
+                AND bvr.mail = #{mail}
+            </if>
+        </where>
+        ORDER BY bvr.view_time DESC
+    </select>
+</mapper>

@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.cqcskj.blog.mapper.TagMapper">
+    <!-- 修复resultMap的type与resultType不一致问题 -->
+    <resultMap id="TagResultMap" type="java.util.Map">
+        <id property="tagId" column="tag_id" />
+        <result property="name" column="tag_name" />
+        <result property="description" column="description" />
+        <result property="color" column="color" />
+        <result property="blogCount" column="blog_count" />
+    </resultMap>
+
+    <!-- 查询标签及博客使用次数（支持模糊查询） -->
+    <select id="selectTagsWithBlogCountMapper" resultMap="TagResultMap">
+        SELECT
+        t.tag_id AS tag_id,
+        t.name AS tag_name,
+        t.description AS description,
+        t.color AS color,
+        COUNT(b.blog_id) AS blog_count
+        FROM
+        tag t
+        LEFT JOIN
+        blog_tag bt ON t.tag_id = bt.tag_id
+        LEFT JOIN
+        blog b ON bt.blog_id = b.blog_id
+        <where>
+            <if test="name != null and name != ''">
+                t.name LIKE CONCAT('%', #{name}, '%')
+            </if>
+        </where>
+        GROUP BY
+        t.tag_id, t.name, t.description, t.color
+        ORDER BY
+        blog_count DESC, t.name ASC
+    </select>
+
+</mapper>
